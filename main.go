@@ -52,7 +52,6 @@ func reposHandler(w http.ResponseWriter, r *http.Request, _ map[string]string) e
 
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(body)
-	w.WriteHeader(http.StatusOK)
 
 	return nil
 }
@@ -61,15 +60,19 @@ func statsHandler(w http.ResponseWriter, r *http.Request, _ map[string]string) e
 	log := logger.Get(r.Context())
 
 	ghClient := github.NewClient()
-	body, err := ghClient.GatherLatestRepositoriesStats()
-
+	statsRepos, err := ghClient.GatherLatestRepositoriesStats(r.URL.Query())
 	if err != nil {
-		log.WithError(err).Error("Fail to gather repositories statistics")
+		log.WithError(err).Error("Fail to list repositories")
+	}
+
+	body, err := json.Marshal(statsRepos)
+	if err != nil {
+		log.WithError(err).Error("Fail to encode response")
+		body = []byte{}
 	}
 
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(body)
-	w.WriteHeader(http.StatusOK)
 
 	return nil
 }

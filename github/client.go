@@ -14,10 +14,17 @@ const (
 	maximumResults            = 5 // TODO: use 100
 )
 
-type Client struct {
-	searchReposBaseURL string
-	maxResults         uint
-}
+type (
+	Client struct {
+		searchReposBaseURL string
+		maxResults         uint
+	}
+
+	repoLanguages struct {
+		ID        uint
+		Languages []Language
+	}
+)
 
 func NewClient() *Client {
 	return &Client{
@@ -39,7 +46,7 @@ func (c *Client) ListLatestRepositories(filters url.Values) ([]Repository, error
 		return nil, err
 	}
 
-	var repos RepositoriesReponse
+	var repos GithubRepositoriesReponse
 
 	err = json.Unmarshal(body, &repos)
 	if err != nil {
@@ -49,14 +56,70 @@ func (c *Client) ListLatestRepositories(filters url.Values) ([]Repository, error
 	return repos.Items, err
 }
 
-func (c *Client) GatherLatestRepositoriesStats() ([]byte, error) {
-	return nil, nil
+func (c *Client) GatherLatestRepositoriesStats(filters url.Values) ([]StatsRepository, error) {
+	repos, err := c.ListLatestRepositories(filters)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan repoLanguages, len(repos))
+
+	statsReposDict := make(map[uint]StatsRepository)
+	for _, repo := range repos {
+		statsRepo := StatsRepository{
+			ID:       repo.ID,
+			FullName: repo.FullName,
+			License:  repo.License,
+			URL:      repo.URL,
+		}
+
+		statsReposDict[repo.ID] = statsRepo
+
+		// Concurrently gather languages informations.
+		go func(repoID uint, repoURL string) {
+			if languages, err := c.getRepoLanguages(repoURL); err == nil {
+				ch <- repoLanguages{
+					ID:        repoID,
+					Languages: languages,
+				}
+			}
+		}(repo.ID, repo.URL)
+	}
+
+	// Complete stats repositories with langugages informations.
+	statsRepos := make([]StatsRepository, 0, len(statsReposDict))
+
+	for i := range repos {
+		_ = i
+
+		repoLanguages := <-ch
+		v := statsReposDict[repoLanguages.ID]
+		v.Languages = repoLanguages.Languages
+
+		statsRepos = append(statsRepos, v)
+	}
+	return statsRepos, nil
 }
 
-func (c *Client) getRepoLanguages(repoURL string) ([]byte, error) {
-	url := fmt.Sprintf("%s/languages", repoURL)
+func (c *Client) getRepoLanguages(repoURL string) ([]Language, error) {
+	languagesURL := fmt.Sprintf("%s/languages", repoURL)
 
-	return httpRawGet(url)
+	body, err := httpRawGet(languagesURL)
+	if err != nil {
+		return nil, err
+	}
+
+	var languagesDict map[string]uint
+	if err = json.Unmarshal(body, &languagesDict); err != nil {
+		return nil, fmt.Errorf("decode %q response: %w", repoURL, err)
+	}
+
+	languages := make([]Language, 0, len(languagesDict))
+	for k, v := range languagesDict {
+		languages = append(languages, Language{Name: k, Bytes: v})
+	}
+
+	return languages, nil
 }
 
 func httpRawGet(rawURL string) ([]byte, error) {

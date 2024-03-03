@@ -5,16 +5,29 @@ type (
 		Name string `json:"name"`
 	}
 
-	Repository struct {
-		ID         uint    `json:"id"`
-		FullName   string  `json:"full_name"`
-		Language   string  `json:"language"`
-		License    License `json:"license"`
-		Repository string  `json:"repository"`
-		URL        string  `json:"url"`
-		CreatedAt  string  `json:"created_at"`
+	Language struct {
+		Name  string `json:"name"`
+		Bytes uint   `json:"bytes"`
 	}
-	RepositoriesReponse struct {
+
+	Repository struct {
+		ID        uint    `json:"id"`
+		FullName  string  `json:"full_name"`
+		Language  string  `json:"language"`
+		License   License `json:"license"`
+		URL       string  `json:"url"`
+		CreatedAt string  `json:"created_at"`
+	}
+
+	StatsRepository struct {
+		ID        uint       `json:"id"`
+		FullName  string     `json:"full_name"`
+		Languages []Language `json:"languages"`
+		License   License    `json:"license"`
+		URL       string     `json:"url"`
+	}
+
+	GithubRepositoriesReponse struct {
 		Items []Repository `json:"items"`
 	}
 )
