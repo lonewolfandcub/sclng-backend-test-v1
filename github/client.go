@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const (
@@ -25,15 +26,20 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) ListLatestRepositories() ([]Repository, error) {
-	searchURL := fmt.Sprintf("%s?q=is:public&sort=updated&order=desc&per_page=%d", c.searchReposBaseURL, c.maxResults)
-
-	var repos RepositoriesReponse
+func (c *Client) ListLatestRepositories(filters url.Values) ([]Repository, error) {
+	searchURL := fmt.Sprintf(
+		"%s?q=%s&sort=updated&order=desc&per_page=%d",
+		c.searchReposBaseURL,
+		intoSearchQuery(filters),
+		c.maxResults,
+	)
 
 	body, err := httpRawGet(searchURL)
 	if err != nil {
 		return nil, err
 	}
+
+	var repos RepositoriesReponse
 
 	err = json.Unmarshal(body, &repos)
 	if err != nil {
@@ -71,4 +77,14 @@ func httpRawGet(rawURL string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func intoSearchQuery(filters url.Values) string {
+	var sb strings.Builder
+	sb.WriteString("is:public")
+
+	for name, values := range filters {
+		sb.WriteString(fmt.Sprintf("+%s:%s", name, strings.Join(values, ",")))
+	}
+	return sb.String()
 }

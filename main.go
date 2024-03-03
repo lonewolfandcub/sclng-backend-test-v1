@@ -39,7 +39,7 @@ func reposHandler(w http.ResponseWriter, r *http.Request, _ map[string]string) e
 	log := logger.Get(r.Context())
 
 	ghClient := github.NewClient()
-	repos, err := ghClient.ListLatestRepositories()
+	repos, err := ghClient.ListLatestRepositories(r.URL.Query())
 	if err != nil {
 		log.WithError(err).Error("Fail to list repositories")
 	}
