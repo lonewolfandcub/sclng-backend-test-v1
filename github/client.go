@@ -11,7 +11,7 @@ import (
 
 const (
 	searchRepositoriesBaseURL = "https://api.github.com/search/repositories"
-	maximumResults            = 5 // TODO: use 100
+	maximumResults            = 100
 )
 
 type (
@@ -77,12 +77,11 @@ func (c *Client) GatherLatestRepositoriesStats(filters url.Values) ([]StatsRepos
 
 		// Concurrently gather languages informations.
 		go func(repoID uint, repoURL string) {
+			repoLang := repoLanguages{ID: repoID}
 			if languages, err := c.getRepoLanguages(repoURL); err == nil {
-				ch <- repoLanguages{
-					ID:        repoID,
-					Languages: languages,
-				}
+				repoLang.Languages = languages
 			}
+			ch <- repoLang
 		}(repo.ID, repo.URL)
 	}
 
@@ -92,9 +91,9 @@ func (c *Client) GatherLatestRepositoriesStats(filters url.Values) ([]StatsRepos
 	for i := range repos {
 		_ = i
 
-		repoLanguages := <-ch
-		v := statsReposDict[repoLanguages.ID]
-		v.Languages = repoLanguages.Languages
+		repoLang := <-ch
+		v := statsReposDict[repoLang.ID]
+		v.Languages = repoLang.Languages
 
 		statsRepos = append(statsRepos, v)
 	}
