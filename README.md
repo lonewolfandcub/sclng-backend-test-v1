@@ -101,7 +101,8 @@ The wweb-application is composed of two packages:
 * `main` contains the `main.go` file that launches the webserver and handles the URL calls from the users.
 * `github` contains the Github client that handles the calls to github HTTP API, and the JSON models used to decode Github API reponses and for the web-application own responses.
 
-TODO add diagram here
+![General diagram](/doc/sclng-diagram.png)
+
 
 ### Files
 
@@ -109,7 +110,9 @@ TODO add diagram here
 * gihub/client.go
 * gihub/models.go
 
-### Gihub client (client.go)
+
+
+### Github client  (client.go)
 
 The main struture is `github.Client` and its two main public methods:
 1. `ListLatestRepositories` to list the latest repositories,
