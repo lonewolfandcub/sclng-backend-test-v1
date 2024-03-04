@@ -85,7 +85,7 @@ func (c *Client) GatherLatestRepositoriesStats(filters url.Values) ([]StatsRepos
 		}(repo.ID, repo.URL)
 	}
 
-	// Complete stats repositories with langugages informations.
+	// Complete stats repositories with languages informations.
 	statsRepos := make([]StatsRepository, 0, len(statsReposDict))
 
 	for i := range repos {
